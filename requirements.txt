@@ -41,3 +41,4 @@ urllib3==2.5.0
 Werkzeug==3.0.3
 wrapt==2.0.1
 WTForms==3.2.1
+gunicorn
