@@ -1,0 +1,140 @@
+{% extends "layout.html" %} {% block title %}Log Aktivitas Pengguna{% endblock
+%} {% block content %}
+<div class="flex min-h-screen bg-gray-100">
+  <!-- Sidebar -->
+  <aside class="w-64 bg-gray-800 text-white p-6 flex-shrink-0">
+    <h2 class="text-2xl font-bold mb-8">Admin Panel</h2>
+    <nav class="space-y-1">
+      <a
+        href="{{ url_for('admin_dashboard') }}"
+        class="block py-2.5 px-4 rounded transition duration-200 text-gray-300 hover:bg-gray-700 hover:text-white"
+      >
+        Kelola Buku
+      </a>
+      <a
+        href="{{ url_for('manage_users') }}"
+        class="block py-2.5 px-4 rounded transition duration-200 text-gray-300 hover:bg-gray-700 hover:text-white"
+      >
+        Kelola Pengguna
+      </a>
+      <a
+        href="{{ url_for('view_logs') }}"
+        class="block py-2.5 px-4 rounded transition duration-200 bg-gray-900 text-white"
+      >
+        Logs
+      </a>
+      <a
+        href="{{ url_for('logout') }}"
+        class="block py-2.5 px-4 rounded transition duration-200 text-gray-300 hover:bg-gray-700 hover:text-white"
+      >
+        Logout
+      </a>
+    </nav>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="flex-1 p-10 min-w-0">
+    <div class="flex justify-between items-center mb-6">
+      <h1 class="text-3xl font-bold text-gray-900">Log Aktivitas Pengguna</h1>
+      <!-- Tombol Hapus Log Baru -->
+      <form
+        action="{{ url_for('delete_logs') }}"
+        method="POST"
+        onsubmit="return confirm('Apakah Anda yakin ingin membersihkan semua log? Tindakan ini tidak dapat dibatalkan.');"
+      >
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+        <button
+          type="submit"
+          class="bg-red-600 text-white py-2 px-4 rounded-lg hover:bg-red-700 transition-colors flex items-center"
+        >
+          <i class="fas fa-trash-alt mr-2"></i>Bersihkan Log
+        </button>
+      </form>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %} {% if
+    messages %} {% for category, message in messages %}
+    <div
+      class="mb-4 rounded-md p-4 {{ 'bg-red-100 text-red-700' if category == 'danger' else ('bg-green-100 text-green-700' if category == 'success' else 'bg-blue-100 text-blue-700') }}"
+      role="alert"
+    >
+      <p class="font-bold">{{ message }}</p>
+    </div>
+    {% endfor %} {% endif %} {% endwith %}
+
+    <!-- Tabel Log -->
+    <div class="overflow-x-auto bg-white shadow sm:rounded-lg">
+      <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+          <tr>
+            <th
+              scope="col"
+              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+            >
+              Waktu
+            </th>
+            <th
+              scope="col"
+              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+            >
+              Level
+            </th>
+            <th
+              scope="col"
+              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+            >
+              Aktivitas
+            </th>
+            <th
+              scope="col"
+              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+            >
+              Alamat IP
+            </th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+          {% for log in logs %}
+          <tr>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+              {{ log.timestamp }}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              {% if log.level == 'WARNING' or log.level == 'ERROR' %}
+              <span
+                class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800"
+              >
+                {{ log.level }}
+              </span>
+              {% elif log.level == 'INFO' %}
+              <span
+                class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800"
+              >
+                {{ log.level }}
+              </span>
+              {% else %}
+              <span
+                class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800"
+              >
+                {{ log.level }}
+              </span>
+              {% endif %}
+            </td>
+            <td class="px-6 py-4 text-sm text-gray-700">{{ log.message }}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+              {{ log.ip }}
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="4" class="px-6 py-4 text-center text-sm text-gray-500">
+              Tidak ada log aktivitas pengguna yang ditemukan.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </main>
+</div>
+{% endblock %}

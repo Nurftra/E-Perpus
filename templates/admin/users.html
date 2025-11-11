@@ -17,6 +17,12 @@ block content %}
         Kelola Pengguna
       </a>
       <a
+        href="{{ url_for('view_logs') }}"
+        class="block py-2.5 px-4 rounded transition duration-200 {% if request.endpoint == 'view_logs' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %}"
+      >
+        Logs
+      </a>
+      <a
         href="{{ url_for('logout') }}"
         class="block py-2.5 px-4 rounded transition duration-200 text-gray-300 hover:bg-gray-700 hover:text-white"
         >Logout</a
