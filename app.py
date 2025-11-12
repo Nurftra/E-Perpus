@@ -21,6 +21,7 @@ import pyotp
 import qrcode
 import base64
 from io import BytesIO
+from mailjet_rest import Client as MailjetClient
 
 app = Flask(__name__)
 
@@ -166,24 +167,37 @@ def generate_verification_code():
 
 def send_verification_email(user):
     """Mengirim email verifikasi ke pengguna."""
-    msg = Message(
-        'Kode Verifikasi Akun E-Perpus',
-        recipients=[user.email]
-    )
-    msg.body = f"""
-    Halo {user.username},
-
-    Gunakan kode berikut untuk memverifikasi akun Anda:
-
-    {user.verification_code}
-
-    Kode ini akan kedaluwarsa dalam 10 menit.
-    """
+        # --- GANTI DARI FLASK-MAIL KE MAILJET API ---
     try:
-        mail.send(msg)
+        api_key = os.environ.get('MAILJET_API_KEY')
+        api_secret = os.environ.get('MAILJET_SECRET_KEY')
+        sender_email = os.environ.get('MAIL_SENDER_EMAIL')
+
+        if not all([api_key, api_secret, sender_email]):
+            logging.error("Variabel lingkungan Mailjet tidak lengkap.")
+            return False
+
+        mailjet = MailjetClient(auth=(api_key, api_secret), version='v3.1')
+        data = {
+            'Messages': [
+                {
+                    "From": {
+                        "Email": sender_email,
+                        "Name": "E-Perpus SMAN 1 Tinombo"
+                    },
+                    "To": [{"Email": user.email, "Name": user.username}],
+                    "Subject": "Kode Verifikasi Akun E-Perpus",
+                    "TextPart": f"Halo {user.username},\n\nGunakan kode berikut untuk memverifikasi akun Anda:\n\n{user.verification_code}\n\nKode ini akan kedaluwarsa dalam 10 menit."
+                }
+            ]
+        }
+        result = mailjet.send.create(data=data)
+        if result.status_code != 200:
+            logging.error(f"Mailjet API Error: {result.status_code} - {result.json()}")
+            return False
         return True
     except Exception as e:
-        print(f"Error sending email: {e}") # Untuk debugging
+        logging.error(f"Gagal mengirim email verifikasi ke {user.email} via Mailjet API: {e}") # Untuk debugging
         return False
     
 def send_password_reset_email(user):
@@ -191,24 +205,28 @@ def send_password_reset_email(user):
     # Buat token yang berlaku selama 30 menit (1800 detik)
     token = s.dumps(user.email, salt='password-reset-salt')
     reset_url = url_for('reset_with_token', token=token, _external=True)
-    msg = Message(
-        'Reset Password Akun E-Perpus',
-        recipients=[user.email]
-    )
-    msg.body = f"""
-    Halo {user.username},
-
-    Untuk mereset password Anda, silakan kunjungi link berikut:
-    {reset_url}
-
-    Jika Anda tidak meminta reset password, abaikan email ini.
-    Link ini akan kedaluwarsa dalam 30 menit.
-    """
+        # --- UPDATE: Menggunakan Mailjet API, bukan Flask-Mail ---
     try:
-        mail.send(msg)
+        api_key = os.environ.get('MAILJET_API_KEY')
+        api_secret = os.environ.get('MAILJET_SECRET_KEY')
+        sender_email = os.environ.get('MAIL_SENDER_EMAIL')
+
+        mailjet = MailjetClient(auth=(api_key, api_secret), version='v3.1')
+        data = {
+            'Messages': [{
+                "From": {"Email": sender_email, "Name": "E-Perpus SMAN 1 Tinombo"},
+                "To": [{"Email": user.email, "Name": user.username}],
+                "Subject": "Reset Password Akun E-Perpus",
+                "TextPart": f"Halo {user.username},\n\nUntuk mereset password Anda, silakan kunjungi link berikut:\n{reset_url}\n\nJika Anda tidak meminta reset password, abaikan email ini. Link ini akan kedaluwarsa dalam 30 menit."
+            }]
+        }
+        result = mailjet.send.create(data=data)
+        if result.status_code != 200:
+            logging.error(f"Mailjet API Error (Password Reset): {result.status_code} - {result.json()}")
+            return False
         return True
     except Exception as e:
-        logging.error(f"Gagal mengirim email verifikasi ke {user.email}: {e}")
+        logging.error(f"Gagal mengirim email reset password ke {user.email} via Mailjet API: {e}")
         return False
 
 # app.py (lanjutan...)
