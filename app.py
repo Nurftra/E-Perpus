@@ -59,13 +59,18 @@ ALLOWED_EXTENSIONS = {'pdf', 'epub', 'doc', 'docx', 'txt'}
 # --- Konfigurasi Flask-Mail untuk Gmail ---
 # PENTING: Gunakan "App Password" dari akun Google Anda, bukan password utama.
 # Kunjungi: https://myaccount.google.com/apppasswords
-app.config['MAIL_SERVER'] = 'smtp.gmail.com'
-app.config['MAIL_PORT'] = int(os.environ.get('MAIL_PORT', 587)) # Ambil dari .env, default 587
+# --- Konfigurasi Flask-Mail untuk Mailjet ---
+app.config['MAIL_SERVER'] = 'in-v3.mailjet.com'
+app.config['MAIL_PORT'] = 587
 app.config['MAIL_USE_TLS'] = True
-# Ambil dari .env
-app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
-app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
-app.config['MAIL_DEFAULT_SENDER'] = ('E-Perpus SMAN 1 Tinombo', os.environ.get('MAIL_USERNAME'))
+app.config['MAIL_USE_SSL'] = False
+app.config['MAIL_USERNAME'] = os.environ.get('MAILJET_API_KEY')
+app.config['MAIL_PASSWORD'] = os.environ.get('MAILJET_SECRET_KEY')
+# Pastikan email ini sudah diverifikasi sebagai "Sender" di akun Mailjet Anda.
+app.config['MAIL_DEFAULT_SENDER'] = (
+    'E-Perpus SMAN 1 Tinombo',
+    os.environ.get('MAIL_SENDER_EMAIL') # Ambil dari variabel lingkungan
+)
 
 # --- Konfigurasi Google reCAPTCHA ---
 # Ambil dari .env
