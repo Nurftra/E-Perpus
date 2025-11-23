@@ -36,20 +36,6 @@
   <main class="flex-1 p-10 min-w-0">
     <div class="flex justify-between items-center mb-6">
       <h1 class="text-3xl font-bold text-gray-900">Log Aktivitas Pengguna</h1>
-      <!-- Tombol Hapus Log Baru -->
-      <form
-        action="{{ url_for('delete_logs') }}"
-        method="POST"
-        onsubmit="return confirm('Apakah Anda yakin ingin membersihkan semua log? Tindakan ini tidak dapat dibatalkan.');"
-      >
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-        <button
-          type="submit"
-          class="bg-red-600 text-white py-2 px-4 rounded-lg hover:bg-red-700 transition-colors flex items-center"
-        >
-          <i class="fas fa-trash-alt mr-2"></i>Bersihkan Log
-        </button>
-      </form>
     </div>
 
     {% with messages = get_flashed_messages(with_categories=true) %} {% if

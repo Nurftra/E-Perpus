@@ -100,7 +100,7 @@ content %}
           <p class="mt-2 text-sm text-gray-600">
             File saat ini:
             <a
-              href="{{ url_for('static', filename='uploads/books/' + buku.file_path) }}"
+              href="{{ url_for('download_buku', buku_id=buku.id) }}"
               target="_blank"
               class="text-blue-600 hover:underline"
               >{{ buku.file_path }}</a

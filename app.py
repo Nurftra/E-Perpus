@@ -53,10 +53,15 @@ app.config['SESSION_COOKIE_SAMESITE'] = 'Lax' # Mencegah cookie dikirim pada req
 # Konfigurasi File Upload
 # Jadikan path absolut untuk keandalan yang lebih baik
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-UPLOAD_FOLDER = os.path.join(BASE_DIR, 'static', 'uploads', 'books')
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER 
+# KRITIS: Pindahkan folder upload ke luar direktori 'static' untuk mencegah eksekusi file.
+UPLOAD_FOLDER = os.path.join(BASE_DIR, 'private_uploads', 'books')
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 # Ekstensi file yang diizinkan untuk buku
 ALLOWED_EXTENSIONS = {'pdf', 'epub', 'doc', 'docx', 'txt'}
+
+# Pastikan folder upload ada
+if not os.path.exists(app.config['UPLOAD_FOLDER']):
+    os.makedirs(app.config['UPLOAD_FOLDER'])
 
 
 # --- Konfigurasi Flask-Mail untuk Gmail ---
@@ -303,6 +308,7 @@ def detail_buku(buku_id):
 
 # Rute untuk mengunduh buku
 @app.route('/download/<int:buku_id>')
+@limiter.limit("10 per minute") # Tambahkan rate limit untuk mencegah penyalahgunaan bandwidth
 @login_required
 def download_buku(buku_id):
     buku = Buku.query.get_or_404(buku_id)
@@ -966,16 +972,16 @@ def view_logs():
     return render_template('admin/logs.html', logs=parsed_logs)
         
 
-@app.route('/admin/logs/delete', methods=['POST'])
-@admin_required
-def delete_logs():
-    log_file = 'e-perpus.log'
-    try:
-        open(log_file, 'w').close()  # Kosongkan isi file
-        flash('Semua log berhasil dihapus.', 'success')
-    except Exception as e:
-        flash(f'Gagal menghapus log: {str(e)}', 'danger')
-    return redirect(url_for('view_logs'))
+# @app.route('/admin/logs/delete', methods=['POST'])
+# @admin_required
+# def delete_logs():
+#     log_file = 'e-perpus.log'
+#     try:
+#         open(log_file, 'w').close()  # Kosongkan isi file
+#         flash('Semua log berhasil dihapus.', 'success')
+#     except Exception as e:
+#         flash(f'Gagal menghapus log: {str(e)}', 'danger')
+#     return redirect(url_for('view_logs'))
 
 
 # --- Middleware untuk Header Keamanan ---
