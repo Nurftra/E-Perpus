@@ -2,6 +2,7 @@
 
 from flask import Flask, render_template, request, redirect, url_for, session, flash, send_from_directory, abort
 from flask_sqlalchemy import SQLAlchemy
+from werkzeug.middleware.proxy_fix import ProxyFix
 from functools import wraps
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
@@ -24,6 +25,10 @@ from io import BytesIO
 from mailjet_rest import Client as MailjetClient
 
 app = Flask(__name__)
+
+# KRUSIAL: Terapkan ProxyFix untuk mendapatkan IP asli pengguna di belakang reverse proxy (seperti di Railway)
+# x_for=1 berarti kita percaya pada 1 lapis proxy.
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
 
 # --- Konfigurasi Logging ---
 logging.basicConfig(
