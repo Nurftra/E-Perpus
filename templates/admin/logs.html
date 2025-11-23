@@ -1,121 +1,155 @@
 {% extends "layout.html" %} {% block title %}Log Aktivitas Pengguna{% endblock
-  %} {% block content %}
-  <div x-data="{ sidebarOpen: false }" class="flex h-screen bg-gray-100">
-    <!-- Sidebar -->
-    <aside
-      class="fixed inset-y-0 left-0 z-30 w-64 bg-gray-900 text-white transform transition-transform duration-300 lg:translate-x-0 lg:static lg:inset-0"
-      :class="{'translate-x-0 ease-out': sidebarOpen, '-translate-x-full ease-in': !sidebarOpen}"
+%} {% block content %}
+<div x-data="{ sidebarOpen: false }" class="flex h-screen bg-gray-100">
+  <!-- Sidebar -->
+  <aside
+    class="fixed inset-y-0 left-0 z-30 w-64 bg-gray-900 text-white transform transition-transform duration-300 lg:translate-x-0 lg:static lg:inset-0"
+    :class="{'translate-x-0 ease-out': sidebarOpen, '-translate-x-full ease-in': !sidebarOpen}"
+  >
+    <div class="flex items-center justify-center mt-8">
+      <div class="flex items-center">
+        <span class="text-white text-2xl font-semibold">Admin Panel</span>
+      </div>
+    </div>
+    <nav class="mt-10">
+      <a
+        href="{{ url_for('admin_dashboard') }}"
+        class="flex items-center mt-4 py-2 px-6 text-gray-100 hover:bg-gray-700"
+      >
+        <i class="fas fa-tachometer-alt w-6"></i
+        ><span class="mx-3">Dasbor</span>
+      </a>
+      <a
+        href="{{ url_for('manage_users') }}"
+        class="flex items-center mt-4 py-2 px-6 text-gray-100 hover:bg-gray-700"
+      >
+        <i class="fas fa-users w-6"></i><span class="mx-3">Pengguna</span>
+      </a>
+      <a
+        href="{{ url_for('view_logs') }}"
+        class="flex items-center mt-4 py-2 px-6 bg-gray-700 bg-opacity-50 text-gray-100 hover:bg-gray-700"
+      >
+        <i class="fas fa-clipboard-list w-6"></i><span class="mx-3">Logs</span>
+      </a>
+      <a
+        href="{{ url_for('logout') }}"
+        class="flex items-center mt-4 py-2 px-6 text-gray-100 hover:bg-gray-700"
+      >
+        <i class="fas fa-sign-out-alt w-6"></i><span class="mx-3">Logout</span>
+      </a>
+    </nav>
+  </aside>
+
+  <div class="flex-1 flex flex-col overflow-hidden">
+    <!-- Header -->
+    <header
+      class="flex justify-between items-center py-4 px-6 bg-white border-b-4 border-blue-600"
     >
-      <div class="flex items-center justify-center mt-8">
-        <div class="flex items-center">
-          <span class="text-white text-2xl font-semibold">Admin Panel</span>
+      <div class="flex items-center">
+        <button @click="sidebarOpen = true" class="text-gray-500 lg:hidden">
+          <i class="fas fa-bars text-xl"></i>
+        </button>
+        <h1 class="text-2xl font-semibold text-gray-700 ml-4 lg:ml-0">
+          Log Aktivitas Pengguna
+        </h1>
+      </div>
+      <div class="flex items-center">
+        <span class="mr-4"
+          >Selamat datang, <strong>{{ current_user.username }}</strong>!</span
+        >
+        <a
+          href="{{ url_for('logout') }}"
+          class="text-gray-500 hover:text-red-600"
+          title="Logout"
+        >
+          <i class="fas fa-sign-out-alt text-xl"></i>
+        </a>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 p-6">
+      <div class="container mx-auto">
+        {% with messages = get_flashed_messages(with_categories=true) %} {% if
+        messages %} {% for category, message in messages %}
+        <div
+          class="p-4 mb-6 text-sm rounded-lg shadow-md {% if category == 'danger' %} bg-red-100 text-red-800 {% elif category == 'success' %} bg-green-100 text-green-800 {% else %} bg-blue-100 text-blue-800 {% endif %}"
+          role="alert"
+        >
+          {{ message }}
+        </div>
+        {% endfor %} {% endif %} {% endwith %}
+
+        <!-- Tabel Log -->
+        <div class="bg-white shadow-lg rounded-lg overflow-x-auto">
+          <table class="min-w-full whitespace-nowrap">
+            <thead class="bg-gray-50">
+              <tr
+                class="text-left text-xs font-semibold text-gray-600 uppercase tracking-wider"
+              >
+                <th class="px-6 py-3">Waktu</th>
+                <th class="px-6 py-3">Level</th>
+                <th class="px-6 py-3">Aktivitas</th>
+                <th class="px-6 py-3">Alamat IP</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200">
+              {% for log in logs %}
+              <tr class="hover:bg-gray-50">
+                <td class="px-6 py-4 text-sm text-gray-500">
+                  {{ log.timestamp }}
+                </td>
+                <td class="px-6 py-4">
+                  {% if log.level == 'WARNING' or log.level == 'ERROR' %}
+                  <span
+                    class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800"
+                  >
+                    {{ log.level }}
+                  </span>
+                  {% elif log.level == 'INFO' %}
+                  <span
+                    class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800"
+                  >
+                    {{ log.level }}
+                  </span>
+                  {% else %}
+                  <span
+                    class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800"
+                  >
+                    {{ log.level }}
+                  </span>
+                  {% endif %}
+                </td>
+                <td
+                  class="px-6 py-4 text-sm text-gray-700 break-words max-w-lg whitespace-normal"
+                >
+                  {{ log.message }}
+                </td>
+                <td class="px-6 py-4 text-sm text-gray-500">{{ log.ip }}</td>
+              </tr>
+              {% else %}
+              <tr>
+                <td colspan="4" class="text-center py-10 text-gray-500">
+                  Tidak ada log aktivitas pengguna yang ditemukan.
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
         </div>
       </div>
-      <nav class="mt-10">
-        <a href="{{ url_for('admin_dashboard') }}" class="flex items-center mt-4 py-2 px-6 text-gray-100 hover:bg-gray-700">
-          <i class="fas fa-tachometer-alt w-6"></i><span class="mx-3">Dasbor</span>
-        </a>
-        <a href="{{ url_for('manage_users') }}" class="flex items-center mt-4 py-2 px-6 text-gray-100 hover:bg-gray-700">
-          <i class="fas fa-users w-6"></i><span class="mx-3">Pengguna</span>
-        </a>
-        <a href="{{ url_for('view_logs') }}" class="flex items-center mt-4 py-2 px-6 bg-gray-700 bg-opacity-50 text-gray-100 hover:bg-gray-700">
-          <i class="fas fa-clipboard-list w-6"></i><span class="mx-3">Logs</span>
-        </a>
-        <a href="{{ url_for('logout') }}" class="flex items-center mt-4 py-2 px-6 text-gray-100 hover:bg-gray-700">
-          <i class="fas fa-sign-out-alt w-6"></i><span class="mx-3">Logout</span>
-        </a>
-      </nav>
-    </aside>
-  
-    <div class="flex-1 flex flex-col overflow-hidden">
-      <!-- Header -->
-      <header class="flex justify-between items-center py-4 px-6 bg-white border-b-4 border-blue-600">
-        <div class="flex items-center">
-          <button @click="sidebarOpen = true" class="text-gray-500 lg:hidden">
-            <i class="fas fa-bars text-xl"></i>
-          </button>
-          <h1 class="text-2xl font-semibold text-gray-700 ml-4 lg:ml-0">
-            Log Aktivitas Pengguna
-          </h1>
-        </div>
-        <div class="flex items-center">
-          <span class="mr-4">Selamat datang, <strong>{{ current_user.username }}</strong>!</span>
-          <a href="{{ url_for('logout') }}" class="text-gray-500 hover:text-red-600" title="Logout">
-            <i class="fas fa-sign-out-alt text-xl"></i>
-          </a>
-        </div>
-      </header>
-  
-      <!-- Main Content -->
-      <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 p-6">
-        <div class="container mx-auto">
-          {% with messages = get_flashed_messages(with_categories=true) %} {% if
-          messages %} {% for category, message in messages %}
-          <div
-            class="p-4 mb-6 text-sm rounded-lg shadow-md {% if category == 'danger' %} bg-red-100 text-red-800 {% elif category == 'success' %} bg-green-100 text-green-800 {% else %} bg-blue-100 text-blue-800 {% endif %}"
-            role="alert"
-          >
-            {{ message }}
-          </div>
-          {% endfor %} {% endif %} {% endwith %}
-  
-          <!-- Tabel Log -->
-          <div class="bg-white shadow-lg rounded-lg overflow-x-auto">
-            <table class="min-w-full whitespace-nowrap">
-              <thead class="bg-gray-50">
-                <tr class="text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  <th class="px-6 py-3">Waktu</th>
-                  <th class="px-6 py-3">Level</th>
-                  <th class="px-6 py-3">Aktivitas</th>
-                  <th class="px-6 py-3">Alamat IP</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-gray-200">
-                {% for log in logs %}
-                <tr class="hover:bg-gray-50">
-                  <td class="px-6 py-4 text-sm text-gray-500">
-                    {{ log.timestamp }}
-                  </td>
-                  <td class="px-6 py-4">
-                    {% if log.level == 'WARNING' or log.level == 'ERROR' %}
-                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
-                      {{ log.level }}
-                    </span>
-                    {% elif log.level == 'INFO' %}
-                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                      {{ log.level }}
-                    </span>
-                    {% else %}
-                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
-                      {{ log.level }}
-                    </span>
-                    {% endif %}
-                  </td>
-                  <td class="px-6 py-4 text-sm text-gray-700 break-words max-w-lg">
-                    {{ log.message }}
-                  </td>
-                  <td class="px-6 py-4 text-sm text-gray-500">
-                    {{ log.ip }}
-                  </td>
-                </tr>
-                {% else %}
-                <tr>
-                  <td colspan="4" class="text-center py-10 text-gray-500">
-                    Tidak ada log aktivitas pengguna yang ditemukan.
-                  </td>
-                </tr>
-                {% endfor %}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </main>
-    </div>
+    </main>
   </div>
-  
-  <!-- Alpine.js untuk interaktivitas sidebar -->
-  <script src="https://cdn.jsdelivr.net/gh/alpinejs/alpine@v2.x.x/dist/alpine.min.js" defer></script>
-  <!-- Font Awesome untuk ikon -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/js/all.min.js" crossorigin="anonymous"></script>
-  {% endblock %}
-  
+</div>
+
+<!-- Alpine.js untuk interaktivitas sidebar -->
+<script
+  src="https://cdn.jsdelivr.net/gh/alpinejs/alpine@v2.x.x/dist/alpine.min.js"
+  defer
+></script>
+<!-- Font Awesome untuk ikon -->
+<script
+  src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/js/all.min.js"
+  crossorigin="anonymous"
+></script>
+{% endblock %}
