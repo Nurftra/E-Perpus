@@ -1,47 +1,83 @@
 {% extends "layout.html" %} {% block title %}Beranda{% endblock %} {% block
 content %}
-<div class="min-h-screen bg-gray-50">
+<style>
+  .gradient-bg {
+    background: linear-gradient(-45deg, #0f172a, #1e3a8a, #3b82f6, #4f46e5);
+    background-size: 400% 400%;
+    animation: gradient 15s ease infinite;
+  }
+  @keyframes gradient {
+    0% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+    100% {
+      background-position: 0% 50%;
+    }
+  }
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  .book-card {
+    animation: fadeInUp 0.5s ease-out forwards;
+    opacity: 0; /* Start hidden */
+  }
+</style>
+
+<div class="min-h-screen gradient-bg text-white">
   <!-- Header -->
-  <header class="bg-white shadow-sm">
+  <header class="sticky top-0 z-50 bg-slate-900/70 backdrop-blur-lg shadow-lg">
     <div class="max-w-7xl mx-auto px-6 py-6 flex justify-between items-center">
       <div>
-        <h1 class="text-2xl font-bold text-gray-800">📚 E-Perpustakaan</h1>
+        <h1 class="text-2xl font-bold text-white">📚 E-Perpustakaan</h1>
       </div>
       <a
         href="{{ url_for('logout') }}"
-        class="text-sm text-gray-600 text hover:text-red-600 transition-colors"
+        class="text-sm text-red-400 hover:text-red-300 transition-colors font-medium"
       >
         Logout
       </a>
     </div>
   </header>
 
-  <!-- Search Bar -->
-  <section class="py-10">
+  <!-- Search Bar & Welcome Message -->
+  <section class="py-12 text-center">
     <div class="max-w-3xl mx-auto px-6">
+      <h2 class="text-4xl font-bold mb-2">
+        Selamat Datang, {{ current_user.username }}!
+      </h2>
+      <p class="text-blue-200 mb-8">
+        Temukan buku favoritmu dari ribuan koleksi yang tersedia.
+      </p>
       <div class="relative">
         <input
           id="searchInput"
           type="search"
           placeholder="🔍 Cari buku berdasarkan judul atau penulis..."
-          class="w-full px-5 py-3 rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-700 shadow-sm"
+          class="w-full px-5 py-3 rounded-full bg-white/10 border border-white/30 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-white/50 shadow-lg text-white"
         />
       </div>
     </div>
   </section>
 
   <!-- Book List -->
-  <section class="pb-20">
+  <section class="pb-24">
     <div class="max-w-7xl mx-auto px-6">
-      <h2 class="text-xl font-semibold text-gray-800 mb-6 border-b pb-2">
-        Daftar Buku
-      </h2>
       <div
         id="noResultsMessage"
-        class="text-center py-12 text-gray-500"
+        class="text-center py-12 text-blue-200"
         style="display: none"
       >
-        <p class="text-lg">
+        <p class="text-xl">
           Maaf, tidak ada buku yang cocok dengan pencarian Anda.
         </p>
       </div>
@@ -52,36 +88,37 @@ content %}
       >
         {% for book in books %}
         <div
-          class="bg-white rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden group"
+          class="book-card bg-slate-800/50 backdrop-blur-md rounded-2xl shadow-lg hover:shadow-blue-500/20 transition-all duration-300 overflow-hidden group transform hover:-translate-y-2"
         >
           <div
-            class="h-40 bg-gradient-to-r from-blue-600 to-indigo-500 flex items-center justify-center text-white text-5xl font-bold"
+            class="h-40 bg-gradient-to-br from-blue-700 to-indigo-800 flex items-center justify-center text-white text-6xl font-bold"
           >
             {{ book.judul[0]|upper }}
           </div>
           <div class="p-6">
             <h3
-              class="text-lg font-semibold text-gray-800 mb-1 group-hover:text-blue-600 transition-colors"
+              class="text-lg font-semibold text-white mb-1 group-hover:text-blue-300 transition-colors truncate"
+              title="{{ book.judul }}"
             >
               {{ book.judul }}
             </h3>
-            <p class="text-sm text-gray-500 mb-3">
+            <p class="text-sm text-gray-400 mb-4">
               {{ book.penulis }} ({{ book.tahun_terbit }})
             </p>
-            <p class="text-gray-600 text-sm mb-5 line-clamp-3">
+            <p class="text-gray-300 text-sm mb-6 line-clamp-3 h-16">
               {{ book.deskripsi or 'Tidak ada deskripsi.' }}
             </p>
             <a
               href="{{ url_for('detail_buku', buku_id=book.id) }}"
-              class="block text-center w-full py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+              class="block text-center w-full py-2 bg-white text-blue-700 rounded-lg font-bold hover:bg-blue-100 transition-colors"
             >
-              📥 Lihat Detail
+              Lihat Detail
             </a>
           </div>
         </div>
         {% else %}
-        <div class="col-span-full text-center py-12 text-gray-500">
-          <p class="text-lg">Belum ada buku di perpustakaan.</p>
+        <div class="col-span-full text-center py-12 text-blue-200">
+          <p class="text-xl">Belum ada buku di perpustakaan.</p>
         </div>
         {% endfor %}
       </div>
@@ -92,9 +129,14 @@ content %}
   document.addEventListener("DOMContentLoaded", function () {
     const searchInput = document.getElementById("searchInput");
     const bookGrid = document.getElementById("bookGrid");
-    // Ambil semua elemen div yang merupakan anak langsung dari bookGrid
-    const bookCards = bookGrid.querySelectorAll(":scope > div");
+    const bookCards = Array.from(bookGrid.querySelectorAll(".book-card"));
     const noResultsMessage = document.getElementById("noResultsMessage");
+
+    // Staggered animation for book cards
+    bookCards.forEach((card, index) => {
+      card.style.animationDelay = `${index * 0.05}s`;
+    });
+
 
     searchInput.addEventListener("input", function () {
       const query = this.value.toLowerCase().trim();
@@ -102,18 +144,16 @@ content %}
 
       bookCards.forEach((card) => {
         const titleElement = card.querySelector("h3");
-        const authorElement = card.querySelector("p");
-
-        // Pastikan elemen ada sebelum mencoba membaca isinya
+        const authorElement = card.querySelector("p.text-sm.text-gray-400");
         if (titleElement && authorElement) {
           const title = titleElement.textContent.toLowerCase();
           const author = authorElement.textContent.toLowerCase();
 
           if (title.includes(query) || author.includes(query)) {
-            card.style.display = ""; // Tampilkan kartu jika cocok
+            card.style.display = ""; 
             visibleBooksCount++;
           } else {
-            card.style.display = "none"; // Sembunyikan kartu jika tidak cocok
+            card.style.display = "none";
           }
         }
       });
