@@ -98,7 +98,9 @@ block content %}
             <tbody class="divide-y divide-gray-200">
               {% for user in users %}
               <tr class="hover:bg-gray-50">
-                <td class="px-6 py-4 text-sm text-gray-500">{{ user.id }}</td>
+                <td class="px-6 py-4 text-sm text-gray-500">
+                  {{ loop.index }}
+                </td>
                 <td class="px-6 py-4 text-sm font-medium text-gray-900">
                   {{ user.username }}
                 </td>
