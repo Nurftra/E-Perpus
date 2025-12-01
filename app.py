@@ -73,15 +73,15 @@ if not os.path.exists(app.config['UPLOAD_FOLDER']):
 # PENTING: Gunakan "App Password" dari akun Google Anda, bukan password utama.
 # Kunjungi: https://myaccount.google.com/apppasswords
 # --- Konfigurasi Flask-Mail untuk Mailjet ---
-# app.config['MAIL_SERVER'] = 'in-v3.mailjet.com'
-app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+app.config['MAIL_SERVER'] = 'in-v3.mailjet.com'
+# app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 587
 app.config['MAIL_USE_TLS'] = True
 app.config['MAIL_USE_SSL'] = False
-# app.config['MAIL_USERNAME'] = os.environ.get('MAILJET_API_KEY')
-# app.config['MAIL_PASSWORD'] = os.environ.get('MAILJET_SECRET_KEY')
-app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
-app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
+app.config['MAIL_USERNAME'] = os.environ.get('MAILJET_API_KEY')
+app.config['MAIL_PASSWORD'] = os.environ.get('MAILJET_SECRET_KEY')
+# app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
+# app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
 # Pastikan email ini sudah diverifikasi sebagai "Sender" di akun Mailjet Anda.
 app.config['MAIL_DEFAULT_SENDER'] = (
     'E-Perpus SMAN 1 Tinombo',
@@ -199,11 +199,30 @@ def generate_verification_code():
 
 def send_verification_email(user):
     """Mengirim email verifikasi ke pengguna."""
-    # --- MENGGUNAKAN FLASK-MAIL (UNTUK GMAIL) ---
+    # --- MENGGUNAKAN MAILJET API ---
     try:
-        msg = Message('Kode Verifikasi Akun E-Perpus', recipients=[user.email])
-        msg.body = f"Halo {user.username},\n\nGunakan kode berikut untuk memverifikasi akun Anda:\n\n{user.verification_code}\n\nKode ini akan kedaluwarsa dalam 5 menit."
-        mail.send(msg)
+        api_key = os.environ.get('MAILJET_API_KEY')
+        api_secret = os.environ.get('MAILJET_SECRET_KEY')
+        sender_email = os.environ.get('MAIL_SENDER_EMAIL')
+
+        if not all([api_key, api_secret, sender_email]):
+            logging.error("Variabel lingkungan Mailjet tidak lengkap.")
+            return False
+
+        mailjet = MailjetClient(auth=(api_key, api_secret), version='v3.1')
+        data = {
+            'Messages': [{
+                "From": {"Email": sender_email, "Name": "E-Perpus SMAN 1 Tinombo"},
+                "To": [{"Email": user.email, "Name": user.username}],
+                "Subject": "Kode Verifikasi Akun E-Perpus",
+                "TextPart": f"Halo {user.username},\n\nGunakan kode berikut untuk memverifikasi akun Anda:\n\n{user.verification_code}\n\nKode ini akan kedaluwarsa dalam 5 menit."
+            }]
+        }
+        result = mailjet.send.create(data=data)
+        if result.status_code != 200:
+            # logging.error(f"Mailjet API Error: {result.status_code} - {result.json()}")
+            logging.error(f"Gagal mengirim email verifikasi ke {user.email} via Mailjet API: {e}")
+            return False
         return True
     except Exception as e:
         logging.error(f"Gagal mengirim email verifikasi ke {user.email} via Flask-Mail/Gmail: {e}")
@@ -214,25 +233,56 @@ def send_password_reset_email(user):
     # Buat token yang berlaku selama 30 menit (1800 detik)
     token = s.dumps(user.email, salt='password-reset-salt')
     reset_url = url_for('reset_with_token', token=token, _external=True)
-        # --- UPDATE: Menggunakan Mailjet API, bukan Flask-Mail ---
+    # --- MENGGUNAKAN MAILJET API ---
     try:
-        msg = Message('Reset Password Akun E-Perpus', recipients=[user.email])
-        msg.body = f"Halo {user.username},\n\nUntuk mereset password Anda, silakan kunjungi link berikut:\n{reset_url}\n\nJika Anda tidak meminta reset password, abaikan email ini. Link ini akan kedaluwarsa dalam 30 menit."
-        mail.send(msg)
+        api_key = os.environ.get('MAILJET_API_KEY')
+        api_secret = os.environ.get('MAILJET_SECRET_KEY')
+        sender_email = os.environ.get('MAIL_SENDER_EMAIL')
+
+        mailjet = MailjetClient(auth=(api_key, api_secret), version='v3.1')
+        data = {
+            'Messages': [{
+                "From": {"Email": sender_email, "Name": "E-Perpus SMAN 1 Tinombo"},
+                "To": [{"Email": user.email, "Name": user.username}],
+                "Subject": "Reset Password Akun E-Perpus",
+                "TextPart": f"Halo {user.username},\n\nUntuk mereset password Anda, silakan kunjungi link berikut:\n{reset_url}\n\nJika Anda tidak meminta reset password, abaikan email ini. Link ini akan kedaluwarsa dalam 30 menit."
+            }]
+        }
+        result = mailjet.send.create(data=data)
+        if result.status_code != 200:
+            logging.error(f"Mailjet API Error (Password Reset): {result.status_code} - {result.json()}")
+            return False
         return True
     except Exception as e:
-        logging.error(f"Gagal mengirim email reset password ke {user.email} via Flask-Mail/Gmail: {e}")
+        # logging.error(f"Gagal mengirim email reset password ke {user.email} via Flask-Mail/Gmail: {e}")
+        logging.error(f"Gagal mengirim email reset password ke {user.email} via Mailjet API: {e}")
         return False
 
 def send_login_otp_email(user):
     """Mengirim kode OTP untuk verifikasi login."""
+    # --- MENGGUNAKAN MAILJET API ---
     try:
-        msg = Message('Kode Verifikasi Login Anda', recipients=[user.email])
-        msg.body = f"Halo {user.username},\n\nSeseorang mencoba login ke akun Anda. Gunakan kode berikut untuk menyelesaikan proses login:\n\n{user.login_otp}\n\nKode ini hanya berlaku selama 5 menit. Jika ini bukan Anda, Anda dapat mengabaikan email ini."
-        mail.send(msg)
+        api_key = os.environ.get('MAILJET_API_KEY')
+        api_secret = os.environ.get('MAILJET_SECRET_KEY')
+        sender_email = os.environ.get('MAIL_SENDER_EMAIL')
+
+        mailjet = MailjetClient(auth=(api_key, api_secret), version='v3.1')
+        data = {
+            'Messages': [{
+                "From": {"Email": sender_email, "Name": "E-Perpus SMAN 1 Tinombo"},
+                "To": [{"Email": user.email, "Name": user.username}],
+                "Subject": "Kode Verifikasi Login Anda",
+                "TextPart": f"Halo {user.username},\n\nSeseorang mencoba login ke akun Anda. Gunakan kode berikut untuk menyelesaikan proses login:\n\n{user.login_otp}\n\nKode ini hanya berlaku selama 5 menit. Jika ini bukan Anda, Anda dapat mengabaikan email ini."
+            }]
+        }
+        result = mailjet.send.create(data=data)
+        if result.status_code != 200:
+            logging.error(f"Mailjet API Error (Login OTP): {result.status_code} - {result.json()}")
+            return False
         return True
     except Exception as e:
-        logging.error(f"Gagal mengirim email login OTP ke {user.email} via Flask-Mail/Gmail: {e}")
+        # logging.error(f"Gagal mengirim email login OTP ke {user.email} via Flask-Mail/Gmail: {e}")
+        logging.error(f"Gagal mengirim email login OTP ke {user.email} via Mailjet API: {e}")
         return False
 
 # --- Decorators ---
