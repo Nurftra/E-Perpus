@@ -215,7 +215,7 @@ def send_verification_email(user):
                 "From": {"Email": sender_email, "Name": "E-Perpus SMAN 1 Tinombo"},
                 "To": [{"Email": user.email, "Name": user.username}],
                 "Subject": "Kode Verifikasi Akun E-Perpus",
-                "TextPart": f"Halo {user.username},\n\nGunakan kode berikut untuk memverifikasi akun Anda:\n\n{user.verification_code}\n\nKode ini akan kedaluwarsa dalam 5 menit."
+                "TextPart": f"Halo {user.username},\n\nGunakan kode berikut untuk memverifikasi akun Anda:\n\n{user.verification_code}\n\nKode ini akan kedaluwarsa dalam 30 Detik."
             }]
         }
         result = mailjet.send.create(data=data)
@@ -272,7 +272,7 @@ def send_login_otp_email(user):
                 "From": {"Email": sender_email, "Name": "E-Perpus SMAN 1 Tinombo"},
                 "To": [{"Email": user.email, "Name": user.username}],
                 "Subject": "Kode Verifikasi Login Anda",
-                "TextPart": f"Halo {user.username},\n\nSeseorang mencoba login ke akun Anda. Gunakan kode berikut untuk menyelesaikan proses login:\n\n{user.login_otp}\n\nKode ini hanya berlaku selama 5 menit. Jika ini bukan Anda, Anda dapat mengabaikan email ini."
+                "TextPart": f"Halo {user.username},\n\nSeseorang mencoba login ke akun Anda. Gunakan kode berikut untuk menyelesaikan proses login:\n\n{user.login_otp}\n\nKode ini hanya berlaku selama 30 Detik. Jika ini bukan Anda, Anda dapat mengabaikan email ini."
             }]
         }
         result = mailjet.send.create(data=data)
