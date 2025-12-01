@@ -1,22 +1,7 @@
 {% extends "layout.html" %} {% block title %}Beranda{% endblock %} {% block
 content %}
 <style>
-  .gradient-bg {
-    background: linear-gradient(-45deg, #0f172a, #1e3a8a, #3b82f6, #4f46e5);
-    background-size: 400% 400%;
-    animation: gradient 15s ease infinite;
-  }
-  @keyframes gradient {
-    0% {
-      background-position: 0% 50%;
-    }
-    50% {
-      background-position: 100% 50%;
-    }
-    100% {
-      background-position: 0% 50%;
-    }
-  }
+  /* Animasi untuk elemen yang muncul */
   @keyframes fadeInUp {
     from {
       opacity: 0;
@@ -29,11 +14,26 @@ content %}
   }
   .book-card {
     animation: fadeInUp 0.5s ease-out forwards;
-    opacity: 0; /* Start hidden */
+    opacity: 0; /* Mulai dari transparan */
+  }
+
+  /* Styling untuk canvas latar belakang */
+  #particle-canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1; /* Pastikan canvas berada di belakang konten lain */
+    background-color: #0f172a; /* Warna dasar latar belakang */
   }
 </style>
 
-<div class="min-h-screen gradient-bg text-white">
+<!-- Canvas untuk animasi latar belakang -->
+<canvas id="particle-canvas"></canvas>
+
+<!-- Wrapper utama untuk konten, z-index diperlukan agar konten berada di atas canvas -->
+<div class="relative z-10 min-h-screen text-white">
   <!-- Header -->
   <header class="sticky top-0 z-50 bg-slate-900/70 backdrop-blur-lg shadow-lg">
     <div class="max-w-7xl mx-auto px-6 py-6 flex justify-between items-center">
@@ -125,6 +125,8 @@ content %}
     </div>
   </section>
 </div>
+
+<!-- Script untuk fungsi pencarian -->
 <script>
   document.addEventListener("DOMContentLoaded", function () {
     const searchInput = document.getElementById("searchInput");
@@ -132,11 +134,10 @@ content %}
     const bookCards = Array.from(bookGrid.querySelectorAll(".book-card"));
     const noResultsMessage = document.getElementById("noResultsMessage");
 
-    // Staggered animation for book cards
+    // Animasi staggered untuk kartu buku
     bookCards.forEach((card, index) => {
       card.style.animationDelay = `${index * 0.05}s`;
     });
-
 
     searchInput.addEventListener("input", function () {
       const query = this.value.toLowerCase().trim();
@@ -150,7 +151,7 @@ content %}
           const author = authorElement.textContent.toLowerCase();
 
           if (title.includes(query) || author.includes(query)) {
-            card.style.display = ""; 
+            card.style.display = "";
             visibleBooksCount++;
           } else {
             card.style.display = "none";
@@ -161,6 +162,154 @@ content %}
       noResultsMessage.style.display =
         visibleBooksCount === 0 ? "block" : "none";
     });
+  });
+</script>
+
+<!-- Script untuk animasi bola api dan jejak kursor -->
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const canvas = document.getElementById("particle-canvas");
+    const ctx = canvas.getContext("2d");
+
+    let mouse = { x: null, y: null };
+    let trailParticles = [];
+    let particles;
+
+    const colors = [
+      "#ff6b6b",
+      "#f06595",
+      "#cc5de8",
+      "#845ef7",
+      "#5c7cfa",
+      "#339af0",
+      "#22b8cf",
+      "#20c997",
+      "#51cf66",
+      "#fcc419",
+    ];
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+
+    class Particle {
+      constructor(x, y, radius, color, vx, vy) {
+        this.x = x;
+        this.y = y;
+        this.radius = radius;
+        this.color = color;
+        this.vx = vx;
+        this.vy = vy;
+      }
+
+      draw() {
+        ctx.beginPath();
+        const gradient = ctx.createRadialGradient(
+          this.x,
+          this.y,
+          0,
+          this.x,
+          this.y,
+          this.radius
+        );
+        gradient.addColorStop(0, this.color + "ff");
+        gradient.addColorStop(0.5, this.color + "b0");
+        gradient.addColorStop(1, this.color + "00");
+        ctx.fillStyle = gradient;
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2, false);
+        ctx.fill();
+      }
+
+      update() {
+        if (this.x + this.radius > canvas.width || this.x - this.radius < 0) {
+          this.vx = -this.vx;
+        }
+        if (this.y + this.radius > canvas.height || this.y - this.radius < 0) {
+          this.vy = -this.vy;
+        }
+        this.x += this.vx;
+        this.y += this.vy;
+        this.draw();
+      }
+    }
+
+    class TrailParticle {
+      constructor() {
+        this.x = mouse.x;
+        this.y = mouse.y;
+        this.size = Math.random() * 4 + 1;
+        this.speedX = Math.random() * 2 - 1;
+        this.speedY = Math.random() * 2 - 1;
+        this.color = colors[Math.floor(Math.random() * colors.length)];
+        this.life = 0;
+        this.maxLife = Math.random() * 60 + 40;
+      }
+
+      update() {
+        this.x += this.speedX;
+        this.y += this.speedY;
+        this.life++;
+      }
+
+      draw() {
+        ctx.globalAlpha = 1 - this.life / this.maxLife;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fillStyle = this.color;
+        ctx.fill();
+        ctx.globalAlpha = 1;
+      }
+    }
+
+    function init() {
+      particles = [];
+      const numberOfParticles = Math.floor(
+        (canvas.width * canvas.height) / 40000
+      );
+      for (let i = 0; i < numberOfParticles; i++) {
+        const radius = Math.random() * 50 + 20;
+        const x = Math.random() * (canvas.width - radius * 2) + radius;
+        const y = Math.random() * (canvas.height - radius * 2) + radius;
+        const color = colors[Math.floor(Math.random() * colors.length)];
+        const vx = (Math.random() - 0.5) * 1.5;
+        const vy = (Math.random() - 0.5) * 1.5;
+        particles.push(new Particle(x, y, radius, color, vx, vy));
+      }
+    }
+
+    function animate() {
+      requestAnimationFrame(animate);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      particles.forEach((p) => p.update());
+
+      for (let i = 0; i < trailParticles.length; i++) {
+        trailParticles[i].update();
+        trailParticles[i].draw();
+        if (trailParticles[i].life >= trailParticles[i].maxLife) {
+          trailParticles.splice(i, 1);
+          i--;
+        }
+      }
+    }
+
+    window.addEventListener("resize", () => {
+      resizeCanvas();
+      init();
+    });
+
+    window.addEventListener("mousemove", function (event) {
+      mouse.x = event.x;
+      mouse.y = event.y;
+      for (let i = 0; i < 2; i++) {
+        trailParticles.push(new TrailParticle());
+      }
+    });
+
+    resizeCanvas();
+    init();
+    animate();
   });
 </script>
 {% endblock %}

@@ -1,111 +1,259 @@
 {% extends "layout.html" %} {% block title %}Verifikasi Dua Langkah{% endblock
-  %} {% block content %}
-  <style>
-    .gradient-bg {
-      background: linear-gradient(-45deg, #0f172a, #1e3a8a, #3b82f6, #4f46e5);
-      background-size: 400% 400%;
-      animation: gradient 15s ease infinite;
+%} {% block content %}
+<style>
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
     }
-  
-    @keyframes gradient {
-      0% {
-        background-position: 0% 50%;
-      }
-      50% {
-        background-position: 100% 50%;
-      }
-      100% {
-        background-position: 0% 50%;
-      }
+    to {
+      opacity: 1;
+      transform: translateY(0);
     }
-  
-    @keyframes fadeIn {
-      from {
-        opacity: 0;
-        transform: translateY(10px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-  
-    .form-container {
-      animation: fadeIn 0.5s ease-out forwards;
-    }
-  </style>
-  
+  }
+
+  .form-container {
+    animation: fadeIn 0.5s ease-out forwards;
+  }
+  #particle-canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    background-color: #0f172a; /* Latar belakang biru tua */
+  }
+</style>
+
+<!-- Canvas untuk animasi latar belakang -->
+<canvas id="particle-canvas"></canvas>
+
+<div
+  class="min-h-screen flex items-center justify-center w-full px-4 relative z-10"
+>
   <div
-    class="min-h-screen flex items-center justify-center w-full gradient-bg px-4"
+    class="form-container w-full max-w-md bg-white/20 backdrop-blur-lg rounded-2xl shadow-2xl p-8 text-white"
   >
-    <div
-      class="form-container w-full max-w-md bg-white/20 backdrop-blur-lg rounded-2xl shadow-2xl p-8 text-white"
-    >
-      <div class="text-center mb-8">
-        <svg
-          class="mx-auto h-12 w-auto text-white"
-          xmlns="http://www.w3.org/2000/svg"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke-width="1.5"
-          stroke="currentColor"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            d="M10.5 1.5H8.25A2.25 2.25 0 0 0 6 3.75v16.5a2.25 2.25 0 0 0 2.25 2.25h7.5A2.25 2.25 0 0 0 18 20.25V3.75a2.25 2.25 0 0 0-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3"
-          />
-        </svg>
-  
-        <h2 class="text-3xl font-bold text-center mt-4">
-          Verifikasi Dua Langkah
-        </h2>
-        <p class="text-center text-blue-200 mt-2">
-          Masukkan kode dari aplikasi authenticator Anda.
-        </p>
-      </div>
-  
-      <!-- Flash Messages -->
-      {% with messages = get_flashed_messages(with_categories=true) %} {% if
-      messages %} {% for category, message in messages %}
-      <div
-        class="p-3 mb-4 text-sm rounded-lg {% if category == 'danger' %} bg-red-500/80 {% elif category == 'success' %} bg-green-500/80 {% else %} bg-blue-500/80 {% endif %}"
-        role="alert"
+    <div class="text-center mb-8">
+      <svg
+        class="mx-auto h-12 w-auto text-white"
+        xmlns="http://www.w3.org/2000/svg"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke-width="1.5"
+        stroke="currentColor"
       >
-        {{ message }}
-      </div>
-      {% endfor %} {% endif %} {% endwith %}
-  
-      <form method="POST" action="{{ url_for('verify_2fa') }}">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-        <div class="mb-6">
-          <label for="code" class="block text-sm font-medium text-blue-100 mb-2"
-            >Kode Verifikasi</label
-          >
-          <input
-            id="code"
-            name="code"
-            type="text"
-            required
-            autofocus
-            pattern="\d{6}"
-            title="Harus 6 digit angka"
-            autocomplete="one-time-code"
-            placeholder="------"
-            class="w-full px-4 py-3 bg-white/10 border border-white/30 rounded-md shadow-sm placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-white/50 text-center text-2xl font-bold tracking-[0.5em]"
-          />
-        </div>
-        <div>
-          <button
-            type="submit"
-            class="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-lg text-sm font-bold text-blue-600 bg-white hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-blue-700 focus:ring-white transition-colors duration-300"
-          >
-            VERIFIKASI
-          </button>
-        </div>
-      </form>
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          d="M10.5 1.5H8.25A2.25 2.25 0 0 0 6 3.75v16.5a2.25 2.25 0 0 0 2.25 2.25h7.5A2.25 2.25 0 0 0 18 20.25V3.75a2.25 2.25 0 0 0-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3"
+        />
+      </svg>
+
+      <h2 class="text-3xl font-bold text-center mt-4">
+        Verifikasi Dua Langkah
+      </h2>
+      <p class="text-center text-blue-200 mt-2">
+        Masukkan kode dari aplikasi authenticator Anda.
+      </p>
     </div>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %} {% if
+    messages %} {% for category, message in messages %}
+    <div
+      class="p-3 mb-4 text-sm rounded-lg {% if category == 'danger' %} bg-red-500/80 {% elif category == 'success' %} bg-green-500/80 {% else %} bg-blue-500/80 {% endif %}"
+      role="alert"
+    >
+      {{ message }}
+    </div>
+    {% endfor %} {% endif %} {% endwith %}
+
+    <form method="POST" action="{{ url_for('verify_2fa') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+      <div class="mb-6">
+        <label for="code" class="block text-sm font-medium text-blue-100 mb-2"
+          >Kode Verifikasi</label
+        >
+        <input
+          id="code"
+          name="code"
+          type="text"
+          required
+          autofocus
+          pattern="\d{6}"
+          title="Harus 6 digit angka"
+          autocomplete="one-time-code"
+          placeholder="------"
+          class="w-full px-4 py-3 bg-white/10 border border-white/30 rounded-md shadow-sm placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-white/50 text-center text-2xl font-bold tracking-[0.5em]"
+        />
+      </div>
+      <div>
+        <button
+          type="submit"
+          class="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-lg text-sm font-bold text-blue-600 bg-white hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-blue-700 focus:ring-white transition-colors duration-300"
+        >
+          VERIFIKASI
+        </button>
+      </div>
+    </form>
   </div>
-  {% endblock %}
-  
-  
+</div>
+
+<!-- Script untuk animasi bola api dan jejak kursor -->
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const canvas = document.getElementById("particle-canvas");
+    const ctx = canvas.getContext("2d");
+
+    let mouse = { x: null, y: null };
+    let trailParticles = [];
+    let particles;
+
+    const colors = [
+      "#ff6b6b",
+      "#f06595",
+      "#cc5de8",
+      "#845ef7",
+      "#5c7cfa",
+      "#339af0",
+      "#22b8cf",
+      "#20c997",
+      "#51cf66",
+      "#fcc419",
+    ];
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+
+    class Particle {
+      constructor(x, y, radius, color, vx, vy) {
+        this.x = x;
+        this.y = y;
+        this.radius = radius;
+        this.color = color;
+        this.vx = vx;
+        this.vy = vy;
+      }
+
+      draw() {
+        ctx.beginPath();
+        const gradient = ctx.createRadialGradient(
+          this.x,
+          this.y,
+          0,
+          this.x,
+          this.y,
+          this.radius
+        );
+        // Membuat efek bola yang bercahaya
+        gradient.addColorStop(0, this.color + "ff"); // Pusat solid
+        gradient.addColorStop(0.5, this.color + "b0"); // Tengah semi-transparan
+        gradient.addColorStop(1, this.color + "00"); // Tepi transparan
+
+        ctx.fillStyle = gradient;
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2, false);
+        ctx.fill();
+      }
+
+      update() {
+        // Memantul di tepi layar
+        if (this.x + this.radius > canvas.width || this.x - this.radius < 0) {
+          this.vx = -this.vx;
+        }
+        if (this.y + this.radius > canvas.height || this.y - this.radius < 0) {
+          this.vy = -this.vy;
+        }
+        // Menggerakkan partikel
+        this.x += this.vx;
+        this.y += this.vy;
+        this.draw();
+      }
+    }
+
+    class TrailParticle {
+      constructor() {
+        this.x = mouse.x;
+        this.y = mouse.y;
+        this.size = Math.random() * 4 + 1; // Ukuran partikel jejak lebih kecil
+        this.speedX = Math.random() * 2 - 1; // Menyebar secara acak
+        this.speedY = Math.random() * 2 - 1;
+        this.color = colors[Math.floor(Math.random() * colors.length)];
+        this.life = 0;
+        this.maxLife = Math.random() * 60 + 40; // Waktu hidup partikel (dalam frame)
+      }
+
+      update() {
+        this.x += this.speedX;
+        this.y += this.speedY;
+        this.life++;
+      }
+
+      draw() {
+        ctx.globalAlpha = 1 - this.life / this.maxLife; // Efek memudar
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fillStyle = this.color;
+        ctx.fill();
+        ctx.globalAlpha = 1; // Reset alpha global
+      }
+    }
+
+    function init() {
+      particles = [];
+      // Menyesuaikan jumlah bola berdasarkan ukuran layar
+      const numberOfParticles = Math.floor(
+        (canvas.width * canvas.height) / 40000
+      );
+      for (let i = 0; i < numberOfParticles; i++) {
+        const radius = Math.random() * 50 + 20; // Radius acak antara 20 dan 70
+        const x = Math.random() * (canvas.width - radius * 2) + radius;
+        const y = Math.random() * (canvas.height - radius * 2) + radius;
+        const color = colors[Math.floor(Math.random() * colors.length)];
+        const vx = (Math.random() - 0.5) * 1.5; // Kecepatan horizontal acak
+        const vy = (Math.random() - 0.5) * 1.5; // Kecepatan vertikal acak
+        particles.push(new Particle(x, y, radius, color, vx, vy));
+      }
+    }
+
+    function animate() {
+      requestAnimationFrame(animate);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Gambar dan update bola-bola besar di latar belakang
+      particles.forEach((p) => p.update());
+
+      // Gambar dan update partikel jejak kursor
+      for (let i = 0; i < trailParticles.length; i++) {
+        trailParticles[i].update();
+        trailParticles[i].draw();
+        if (trailParticles[i].life >= trailParticles[i].maxLife) {
+          trailParticles.splice(i, 1);
+          i--;
+        }
+      }
+    }
+
+    window.addEventListener("resize", () => {
+      resizeCanvas();
+      init();
+    });
+
+    window.addEventListener("mousemove", function (event) {
+      mouse.x = event.x;
+      mouse.y = event.y;
+      // Tambahkan beberapa partikel setiap kali mouse bergerak
+      for (let i = 0; i < 2; i++) {
+        trailParticles.push(new TrailParticle());
+      }
+    });
+
+    resizeCanvas();
+    init();
+    animate();
+  });
+</script>
+{% endblock %}

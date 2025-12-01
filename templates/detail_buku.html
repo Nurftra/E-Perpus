@@ -1,93 +1,236 @@
 {% extends "layout.html" %} {% block title %}{{ buku.judul }}{% endblock %} {%
-  block content %}
-  <style>
-    .gradient-bg {
-      background: linear-gradient(-45deg, #0f172a, #1e3a8a, #3b82f6, #4f46e5);
-      background-size: 400% 400%;
-      animation: gradient 15s ease infinite;
+block content %}
+<style>
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
     }
-    @keyframes gradient {
-      0% {
-        background-position: 0% 50%;
-      }
-      50% {
-        background-position: 100% 50%;
-      }
-      100% {
-        background-position: 0% 50%;
-      }
+    to {
+      opacity: 1;
+      transform: translateY(0);
     }
-    @keyframes fadeIn {
-      from {
-        opacity: 0;
-        transform: translateY(20px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-    .content-container {
-      animation: fadeIn 0.5s ease-out forwards;
-    }
-  </style>
-  
-  <div class="min-h-screen gradient-bg py-12 px-4 sm:px-6 lg:px-8 text-white">
-    <div
-      class="content-container max-w-4xl mx-auto bg-slate-800/50 backdrop-blur-md rounded-2xl shadow-lg overflow-hidden"
-    >
-      <div class="p-8 md:p-12">
-        <!-- Tombol Kembali -->
-        <div class="mb-6">
-          <a
-            href="{{ url_for('index') }}"
-            class="inline-flex items-center text-blue-300 hover:text-white transition-colors"
+  }
+  .content-container {
+    animation: fadeIn 0.5s ease-out forwards;
+  }
+  /* Styling untuk canvas latar belakang */
+  #particle-canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1; /* Pastikan canvas berada di belakang konten lain */
+    background-color: #0f172a; /* Warna dasar latar belakang */
+  }
+</style>
+
+<!-- Canvas untuk animasi latar belakang -->
+<canvas id="particle-canvas"></canvas>
+
+<div class="relative z-10 min-h-screen py-12 px-4 sm:px-6 lg:px-8 text-white">
+  <div
+    class="content-container max-w-4xl mx-auto bg-slate-800/50 backdrop-blur-md rounded-2xl shadow-lg overflow-hidden"
+  >
+    <div class="p-8 md:p-12">
+      <!-- Tombol Kembali -->
+      <div class="mb-6">
+        <a
+          href="{{ url_for('index') }}"
+          class="inline-flex items-center text-blue-300 hover:text-white transition-colors"
+        >
+          <svg
+            class="w-5 h-5 mr-2"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke-width="2"
+            stroke="currentColor"
           >
-            <svg
-              class="w-5 h-5 mr-2"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke-width="2"
-              stroke="currentColor"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"
-              />
-            </svg>
-            Kembali ke Daftar Buku
-          </a>
-        </div>
-  
-        <!-- Detail Buku -->
-        <h1 class="text-4xl font-bold text-white mb-2">{{ buku.judul }}</h1>
-        <p class="text-lg text-blue-200 mb-4">
-          oleh {{ buku.penulis }} - ({{ buku.tahun_terbit }})
-        </p>
-  
-        <div class="border-t border-white/20 my-6"></div>
-  
-        <h2 class="text-xl font-semibold text-white mb-3">Deskripsi</h2>
-        <p class="text-gray-300 leading-relaxed whitespace-pre-wrap">
-          {{ buku.deskripsi or 'Deskripsi tidak tersedia.' }}
-        </p>
-  
-        <div class="border-t border-white/20 my-8"></div>
-  
-        <!-- Tombol Aksi -->
-        <div class="flex justify-center">
-          <a
-            href="{{ url_for('download_buku', buku_id=buku.id) }}"
-            class="w-full sm:w-auto inline-flex items-center justify-center px-8 py-3 border border-transparent text-base font-bold rounded-lg text-blue-700 bg-white hover:bg-blue-100 transition-colors shadow-lg"
-          >
-            📥 Unduh Buku
-          </a>
-        </div>
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"
+            />
+          </svg>
+          Kembali ke Daftar Buku
+        </a>
+      </div>
+
+      <!-- Detail Buku -->
+      <h1 class="text-4xl font-bold text-white mb-2">{{ buku.judul }}</h1>
+      <p class="text-lg text-blue-200 mb-4">
+        oleh {{ buku.penulis }} - ({{ buku.tahun_terbit }})
+      </p>
+
+      <div class="border-t border-white/20 my-6"></div>
+
+      <h2 class="text-xl font-semibold text-white mb-3">Deskripsi</h2>
+      <p class="text-gray-300 leading-relaxed whitespace-pre-wrap">
+        {{ buku.deskripsi or 'Deskripsi tidak tersedia.' }}
+      </p>
+
+      <div class="border-t border-white/20 my-8"></div>
+
+      <!-- Tombol Aksi -->
+      <div class="flex justify-center">
+        <a
+          href="{{ url_for('download_buku', buku_id=buku.id) }}"
+          class="w-full sm:w-auto inline-flex items-center justify-center px-8 py-3 border border-transparent text-base font-bold rounded-lg text-blue-700 bg-white hover:bg-blue-100 transition-colors shadow-lg"
+        >
+          📥 Unduh Buku
+        </a>
       </div>
     </div>
   </div>
-  {% endblock %}
-  
-  
+</div>
+
+<!-- Script untuk animasi bola api dan jejak kursor -->
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const canvas = document.getElementById("particle-canvas");
+    const ctx = canvas.getContext("2d");
+
+    let mouse = { x: null, y: null };
+    let trailParticles = [];
+    let particles;
+
+    const colors = [
+      "#ff6b6b",
+      "#f06595",
+      "#cc5de8",
+      "#845ef7",
+      "#5c7cfa",
+      "#339af0",
+      "#22b8cf",
+      "#20c997",
+      "#51cf66",
+      "#fcc419",
+    ];
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+
+    class Particle {
+      constructor(x, y, radius, color, vx, vy) {
+        this.x = x;
+        this.y = y;
+        this.radius = radius;
+        this.color = color;
+        this.vx = vx;
+        this.vy = vy;
+      }
+
+      draw() {
+        ctx.beginPath();
+        const gradient = ctx.createRadialGradient(
+          this.x,
+          this.y,
+          0,
+          this.x,
+          this.y,
+          this.radius
+        );
+        gradient.addColorStop(0, this.color + "ff");
+        gradient.addColorStop(0.5, this.color + "b0");
+        gradient.addColorStop(1, this.color + "00");
+        ctx.fillStyle = gradient;
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2, false);
+        ctx.fill();
+      }
+
+      update() {
+        if (this.x + this.radius > canvas.width || this.x - this.radius < 0) {
+          this.vx = -this.vx;
+        }
+        if (this.y + this.radius > canvas.height || this.y - this.radius < 0) {
+          this.vy = -this.vy;
+        }
+        this.x += this.vx;
+        this.y += this.vy;
+        this.draw();
+      }
+    }
+
+    class TrailParticle {
+      constructor() {
+        this.x = mouse.x;
+        this.y = mouse.y;
+        this.size = Math.random() * 4 + 1;
+        this.speedX = Math.random() * 2 - 1;
+        this.speedY = Math.random() * 2 - 1;
+        this.color = colors[Math.floor(Math.random() * colors.length)];
+        this.life = 0;
+        this.maxLife = Math.random() * 60 + 40;
+      }
+
+      update() {
+        this.x += this.speedX;
+        this.y += this.speedY;
+        this.life++;
+      }
+
+      draw() {
+        ctx.globalAlpha = 1 - this.life / this.maxLife;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fillStyle = this.color;
+        ctx.fill();
+        ctx.globalAlpha = 1;
+      }
+    }
+
+    function init() {
+      particles = [];
+      const numberOfParticles = Math.floor(
+        (canvas.width * canvas.height) / 40000
+      );
+      for (let i = 0; i < numberOfParticles; i++) {
+        const radius = Math.random() * 50 + 20;
+        const x = Math.random() * (canvas.width - radius * 2) + radius;
+        const y = Math.random() * (canvas.height - radius * 2) + radius;
+        const color = colors[Math.floor(Math.random() * colors.length)];
+        const vx = (Math.random() - 0.5) * 1.5;
+        const vy = (Math.random() - 0.5) * 1.5;
+        particles.push(new Particle(x, y, radius, color, vx, vy));
+      }
+    }
+
+    function animate() {
+      requestAnimationFrame(animate);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      particles.forEach((p) => p.update());
+
+      for (let i = 0; i < trailParticles.length; i++) {
+        trailParticles[i].update();
+        trailParticles[i].draw();
+        if (trailParticles[i].life >= trailParticles[i].maxLife) {
+          trailParticles.splice(i, 1);
+          i--;
+        }
+      }
+    }
+
+    window.addEventListener("resize", () => {
+      resizeCanvas();
+      init();
+    });
+
+    window.addEventListener("mousemove", function (event) {
+      mouse.x = event.x;
+      mouse.y = event.y;
+      for (let i = 0; i < 2; i++) {
+        trailParticles.push(new TrailParticle());
+      }
+    });
+
+    resizeCanvas();
+    init();
+    animate();
+  });
+</script>
+{% endblock %}

@@ -1,26 +1,6 @@
-{% extends "layout.html" %}
-{% block title %}Ganti Email Registrasi{% endblock %}
-
-{% block content %}
+{% extends "layout.html" %} {% block title %}Ganti Email Registrasi{% endblock
+%} {% block content %}
 <style>
-  .gradient-bg {
-    background: linear-gradient(-45deg, #0f172a, #1e3a8a, #3b82f6, #4f46e5);
-    background-size: 400% 400%;
-    animation: gradient 15s ease infinite;
-  }
- 
-  @keyframes gradient {
-    0% {
-      background-position: 0% 50%;
-    }
-    50% {
-      background-position: 100% 50%;
-    }
-    100% {
-      background-position: 0% 50%;
-    }
-  }
- 
   @keyframes fadeIn {
     from {
       opacity: 0;
@@ -31,18 +11,32 @@
       transform: translateY(0);
     }
   }
- 
+
   .form-container {
     animation: fadeIn 0.5s ease-out forwards;
   }
+  #particle-canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    background-color: #0f172a; /* Latar belakang biru tua */
+  }
 </style>
- 
-<div class="min-h-screen flex items-center justify-center w-full gradient-bg px-4">
+
+<!-- Canvas untuk animasi latar belakang -->
+<canvas id="particle-canvas"></canvas>
+
+<div
+  class="min-h-screen flex items-center justify-center w-full px-4 relative z-10"
+>
   <div
     class="form-container w-full max-w-md bg-white/20 backdrop-blur-lg rounded-2xl shadow-2xl p-8 text-white"
   >
     <h2 class="text-3xl font-bold text-center mb-6">Ganti Alamat Email</h2>
- 
+
     {% with messages = get_flashed_messages(with_categories=true) %} {% if
     messages %} {% for category, message in messages %}
     <div
@@ -52,12 +46,12 @@
       {{ message }}
     </div>
     {% endfor %} {% endif %} {% endwith %}
- 
+
     <p class="text-sm text-blue-200 mb-6 text-center">
       Masukkan alamat email baru Anda. Untuk keamanan, konfirmasi dengan
       password Anda.
     </p>
- 
+
     <form method="POST" action="{{ url_for('change_email') }}">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
       <div class="mb-4">
@@ -105,5 +99,152 @@
     </form>
   </div>
 </div>
-{% endblock %}
 
+<!-- Script untuk animasi bola api dan jejak kursor -->
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const canvas = document.getElementById("particle-canvas");
+    const ctx = canvas.getContext("2d");
+
+    let mouse = { x: null, y: null };
+    let trailParticles = [];
+    let particles;
+
+    const colors = [
+      "#ff6b6b",
+      "#f06595",
+      "#cc5de8",
+      "#845ef7",
+      "#5c7cfa",
+      "#339af0",
+      "#22b8cf",
+      "#20c997",
+      "#51cf66",
+      "#fcc419",
+    ];
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+
+    class Particle {
+      constructor(x, y, radius, color, vx, vy) {
+        this.x = x;
+        this.y = y;
+        this.radius = radius;
+        this.color = color;
+        this.vx = vx;
+        this.vy = vy;
+      }
+
+      draw() {
+        ctx.beginPath();
+        const gradient = ctx.createRadialGradient(
+          this.x,
+          this.y,
+          0,
+          this.x,
+          this.y,
+          this.radius
+        );
+        gradient.addColorStop(0, this.color + "ff");
+        gradient.addColorStop(0.5, this.color + "b0");
+        gradient.addColorStop(1, this.color + "00");
+        ctx.fillStyle = gradient;
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2, false);
+        ctx.fill();
+      }
+
+      update() {
+        if (this.x + this.radius > canvas.width || this.x - this.radius < 0) {
+          this.vx = -this.vx;
+        }
+        if (this.y + this.radius > canvas.height || this.y - this.radius < 0) {
+          this.vy = -this.vy;
+        }
+        this.x += this.vx;
+        this.y += this.vy;
+        this.draw();
+      }
+    }
+
+    class TrailParticle {
+      constructor() {
+        this.x = mouse.x;
+        this.y = mouse.y;
+        this.size = Math.random() * 4 + 1;
+        this.speedX = Math.random() * 2 - 1;
+        this.speedY = Math.random() * 2 - 1;
+        this.color = colors[Math.floor(Math.random() * colors.length)];
+        this.life = 0;
+        this.maxLife = Math.random() * 60 + 40;
+      }
+
+      update() {
+        this.x += this.speedX;
+        this.y += this.speedY;
+        this.life++;
+      }
+
+      draw() {
+        ctx.globalAlpha = 1 - this.life / this.maxLife;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fillStyle = this.color;
+        ctx.fill();
+        ctx.globalAlpha = 1;
+      }
+    }
+
+    function init() {
+      particles = [];
+      const numberOfParticles = Math.floor(
+        (canvas.width * canvas.height) / 40000
+      );
+      for (let i = 0; i < numberOfParticles; i++) {
+        const radius = Math.random() * 50 + 20;
+        const x = Math.random() * (canvas.width - radius * 2) + radius;
+        const y = Math.random() * (canvas.height - radius * 2) + radius;
+        const color = colors[Math.floor(Math.random() * colors.length)];
+        const vx = (Math.random() - 0.5) * 1.5;
+        const vy = (Math.random() - 0.5) * 1.5;
+        particles.push(new Particle(x, y, radius, color, vx, vy));
+      }
+    }
+
+    function animate() {
+      requestAnimationFrame(animate);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      particles.forEach((p) => p.update());
+
+      for (let i = 0; i < trailParticles.length; i++) {
+        trailParticles[i].update();
+        trailParticles[i].draw();
+        if (trailParticles[i].life >= trailParticles[i].maxLife) {
+          trailParticles.splice(i, 1);
+          i--;
+        }
+      }
+    }
+
+    window.addEventListener("resize", () => {
+      resizeCanvas();
+      init();
+    });
+
+    window.addEventListener("mousemove", function (event) {
+      mouse.x = event.x;
+      mouse.y = event.y;
+      for (let i = 0; i < 2; i++) {
+        trailParticles.push(new TrailParticle());
+      }
+    });
+
+    resizeCanvas();
+    init();
+    animate();
+  });
+</script>
+{% endblock %}
