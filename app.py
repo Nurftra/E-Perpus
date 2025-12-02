@@ -1290,5 +1290,5 @@ def forbidden_error(error):
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=False)
 
