@@ -215,7 +215,7 @@ def send_verification_email(user):
                 "From": {"Email": sender_email, "Name": "E-Perpus SMAN 1 Tinombo"},
                 "To": [{"Email": user.email, "Name": user.username}],
                 "Subject": "Kode Verifikasi Akun E-Perpus",
-                "TextPart": f"Halo {user.username},\n\nGunakan kode berikut untuk memverifikasi akun Anda:\n\n{user.verification_code}\n\nKode ini akan kedaluwarsa dalam 30 Detik."
+                "TextPart": f"Halo {user.username},\n\nGunakan kode berikut untuk memverifikasi akun Anda:\n\n{user.verification_code}\n\nKode ini akan kedaluwarsa dalam 2 Menit."
             }]
         }
         result = mailjet.send.create(data=data)
@@ -272,7 +272,7 @@ def send_login_otp_email(user):
                 "From": {"Email": sender_email, "Name": "E-Perpus SMAN 1 Tinombo"},
                 "To": [{"Email": user.email, "Name": user.username}],
                 "Subject": "Kode Verifikasi Login Anda",
-                "TextPart": f"Halo {user.username},\n\nSeseorang mencoba login ke akun Anda. Gunakan kode berikut untuk menyelesaikan proses login:\n\n{user.login_otp}\n\nKode ini hanya berlaku selama 30 Detik. Jika ini bukan Anda, Anda dapat mengabaikan email ini."
+                "TextPart": f"Halo {user.username},\n\nSeseorang mencoba login ke akun Anda. Gunakan kode berikut untuk menyelesaikan proses login:\n\n{user.login_otp}\n\nKode ini hanya berlaku selama 2 Menit. Jika ini bukan Anda, Anda dapat mengabaikan email ini."
             }]
         }
         result = mailjet.send.create(data=data)
@@ -439,7 +439,7 @@ def login():
                 # Pastikan kode ada dan belum kedaluwarsa, atau buat yang baru
                 if not user.verification_code or datetime.utcnow() > user.verification_code_expires:
                     user.verification_code = generate_verification_code()
-                    user.verification_code_expires = datetime.utcnow() + timedelta(seconds=30)
+                    user.verification_code_expires = datetime.utcnow() + timedelta(minutes=2)
                     db.session.commit()
                     send_verification_email(user) # Kirim email
                 
@@ -465,7 +465,7 @@ def login():
             # 3. Untuk SEMUA PENGGUNA LAINNYA (pengguna biasa atau admin tanpa 2FA),
             #    wajibkan verifikasi login via email SETIAP SAAT.
             user.login_otp = generate_verification_code()
-            user.login_otp_expires = datetime.utcnow() + timedelta(seconds=30) # OTP berlaku 5 menit
+            user.login_otp_expires = datetime.utcnow() + timedelta(minutes=2) # OTP berlaku 2 menit
             db.session.commit()
             send_login_otp_email(user)
             session['login_verify_user_id'] = user.id # Simpan ID user sementara
@@ -777,7 +777,7 @@ def change_email():
         # 3. Jika semua validasi lolos, update email dan kirim kode baru
         user.email = new_email
         user.verification_code = generate_verification_code()
-        user.verification_code_expires = datetime.utcnow() + timedelta(seconds=30)
+        user.verification_code_expires = datetime.utcnow() + timedelta(minutes=2)
         db.session.commit()
 
         if send_verification_email(user):
@@ -806,7 +806,7 @@ def resend_code():
         return redirect(url_for('index'))
 
     user.verification_code = generate_verification_code()
-    user.verification_code_expires = datetime.utcnow() + timedelta(minutes=10)
+    user.verification_code_expires = datetime.utcnow() + timedelta(minutes=2)
     db.session.commit()
     
     if send_verification_email(user):
