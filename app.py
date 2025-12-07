@@ -474,12 +474,12 @@ def login():
                 flash('Akun Anda belum diverifikasi. Kami telah mengirimkan kode ke email Anda.', 'info')
                 return redirect(url_for('verify'))
 
-            # 2. Jika user adalah admin dan 2FA (Aplikasi Authenticator) aktif, arahkan ke sana.
-            if user.role == 'administrator' and user.otp_secret:
+            # 2. Jika user adalah admin atau superadmin dan 2FA (Aplikasi Authenticator) aktif, arahkan ke sana.
+            if user.role in ['administrator', 'superadmin'] and user.otp_secret:
                 session['2fa_user_id'] = user.id  # Simpan ID user untuk diverifikasi
-                logging.info(f"Admin '{username}' diarahkan ke verifikasi 2FA.")
+                logging.info(f"User '{username}' (Role: {user.role}) diarahkan ke verifikasi 2FA.")
                 return redirect(url_for('verify_2fa'))
-            # 3. Jika user adalah administrator dan Superadmin telah mengaktifkan bypass login OTP
+            # 3. Jika user adalah administrator dan Superadmin telah mengaktifkan bypass login OTP untuknya
             if user.role == 'administrator' and user.bypass_login_otp:
                 session['user_id'] = user.id
                 session['role'] = user.role
@@ -489,7 +489,7 @@ def login():
                 logging.info(f"Admin '{username}' (ID: {user.id}) berhasil login dengan bypass OTP email oleh Superadmin.")
                 flash('Login berhasil! Verifikasi email login telah dilewati oleh Superadmin.', 'success')
                 return redirect(url_for('admin_dashboard'))
-            # 3. Untuk SEMUA PENGGUNA LAINNYA (pengguna biasa atau admin tanpa 2FA),
+            # 4. Untuk SEMUA PENGGUNA LAINNYA (pengguna biasa atau admin tanpa 2FA),
             #    wajibkan verifikasi login via email SETIAP SAAT.
             user.login_otp = generate_verification_code()
             user.login_otp_expires = datetime.utcnow() + timedelta(minutes=2) # OTP berlaku 2 menit
